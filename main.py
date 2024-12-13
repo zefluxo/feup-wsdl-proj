@@ -1,10 +1,13 @@
+from pprint import pprint
 from SPARQLWrapper import SPARQLWrapper, JSON
+from rdflib import Graph, Namespace, URIRef, BNode, Literal
+import rdflib.namespace
 
-sparql_driver = SPARQLWrapper(
-    "http://dbpedia.org/sparql"
-)
+dbpedia_driver = SPARQLWrapper( "http://dbpedia.org/sparql" )
+dbpedia_driver.setReturnFormat(JSON)
 
-sparql_driver.setReturnFormat(JSON)
+yago_driver = SPARQLWrapper( "https://yago-knowledge.org/sparql/query" )
+yago_driver.setReturnFormat(JSON)
 
 """ # Temporal Properties
 dbo:birthDate a rdf:Property ;
@@ -27,7 +30,7 @@ dbo:endDate a rdf:Property ;
     rdfs:domain dbo:Event ;
     rdfs:range xsd:dateTime . """
 
-universal_data = ['rdfs:label', 'dbo:abstract', 'dbo:birthDate', 'dbo:deathDate', 'owl:sameAs', '']
+universal_data = ['rdfs:label', 'dbo:abstract', 'dbo:birthDate', 'dbo:deathDate', 'owl:sameAs']
 specific_data = {
     
     'dbo:Politician': ['dbo:termPeriod'], # objects of class 'time period' which has dbo:start/end has xsd:date
@@ -37,78 +40,68 @@ specific_data = {
     'dbo:Artist': [],
     'dbo:Writer': [],
     'dbo:Explorer': [],
-    'dbo:Royalty': ['dbo:activeYearsStartYear', 'dbo:activeYearsEndYear', ],
+    'dbo:Royalty': ['dbo:activeYearsStartYear', 'dbo:activeYearsEndYear']
 
 }
 
 # retrieve persons
 
-sparql_driver.setQuery("""
+dbpedia_driver.setQuery("""
 
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX dbp: <http://dbpedia.org/property/>
-PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
 
-SELECT ?entity ?label ?date
+SELECT DISTINCT ?entity ?label ?date ?abstract GROUP_CONCAT(DISTINCT ?sameAs; SEPARATOR = ",") AS ?sameAs
 WHERE {
   ?entity a dbo:SocietalEvent .
-  ?entity rdfs:label ?label .  FILTER(LANG(?label) = "en") .
+  ?entity rdfs:label ?label .
   ?entity dbp:date ?date .
+  ?entity dbo:abstract ?abstract .
+  ?entity owl:sameAs ?sameAs .
                        
+  FILTER(LANG(?abstract) IN ('en', 'es', 'pt'))
   FILTER(CONTAINS(LCASE(?label), "anglo-french war")) 
 }
                        
-LIMIT 10
-
 """)
 
-sparql_driver.setQuery("""
-PREFIX dbo: <http://dbpedia.org/ontology/>
-PREFIX dct: <http://purl.org/dc/terms/>
-PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+g = Graph(bind_namespaces="rdflib")
 
-SELECT DISTINCT ?entity ?label ?abstract ?birthDate ?deathDate ?country ?sameAs
-WHERE {
-  ?entity a ?type .
-  VALUES ?type {
-    dbo:Politician
-    dbo:MilitaryPerson
-    dbo:Philosopher
-    dbo:Scientist
-    dbo:Artist
-    dbo:Writer
-    dbo:Explorer
-    dbo:Royalty
-    dbo:Cleric
-    dbo:Athlete
-    dbo:Inventor
-    dbo:ReligiousPerson
-  }
-  OPTIONAL { ?entity rdfs:label ?label . FILTER (lang(?label) = "en") }
-  OPTIONAL { ?entity rdfs:abstract ?abstract . FILTER (lang(?abstract) = "en") }
-  OPTIONAL { ?entity dbo:birthDate ?birthDate . }
-  OPTIONAL { ?entity dbo:deathDate ?deathDate . }
-  OPTIONAL { ?entity dbo:country ?country . }
-}
-LIMIT 100
-""")
+dbo = Namespace("http://dbpedia.org/ontology/")
+dbp = Namespace("http://dbpedia.org/property/")
+dbr = Namespace("http://dbpedia.org/resource/")
+yago = Namespace("http://yago-knowledge.org/resource/")
 
+g.bind("dbo", dbo)
+g.bind("dbp", dbp)
+g.bind("dbr", dbr)
+g.bind("yago", yago)
 
 try: 
 
-    result = sparql_driver.queryAndConvert()
+    result = dbpedia_driver.queryAndConvert()
 
     for entity in result['results']['bindings']:
-        """ print([
-            entity['label']['value'],
-            entity['comment']['value'],
-            entity['birthDate']['value'],
-            entity['deathDate']['value'],
-            entity['country']['value']
-        ]) """
-        print(entity)
+        
+        resource_name = entity['entity']['value'].split('/')[-1].replace("-", "_").replace("–", "_")
+        event = dbr[resource_name]
+        event_name = Literal(entity['label']['value'])
+        event_date = Literal(entity['date']['value'])
+        event_description = Literal(entity['abstract']['value'])
+        same_events = [URIRef(same) for same in entity['sameAs']['value'].split(',')]
+        relevant_events = []
 
-except Exception as e: print("uhohhhhh " + str(e.with_traceback_()))
+        g.add((event, rdflib.namespace.RDF.type, dbo['SocietalEvent']))
+        g.add((event, rdflib.namespace.RDFS.label, event_name))
+        g.add((event, dbo.abstract, event_description))
+        g.add((event, dbp.date, event_date))
+        
+        for same in same_events:
+            g.add((event, rdflib.namespace.OWL.sameAs, same))
 
+except Exception as e: print("[ERROR] " + str(e.with_traceback_()))
+
+g.serialize("new_ontology.ttl")
