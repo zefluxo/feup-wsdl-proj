@@ -96,7 +96,7 @@ hist:militaryService a owl:DatatypeProperty ;
     rdfs:domain hist:Militarian ;
     rdfs:range xsd:dateTime ;
     rdfs:label "Military Service"@en ,
-               "Serviço Militar"@pt ,
+               "Servico Militar"@pt ,
                "Servicio Militar"@es ;
     rdfs:comment "The period of time spent in military service"@en ,
                  "O período de tempo em serviço militar"@pt .
@@ -105,7 +105,7 @@ hist:Philosopher a rdfs:Class ;
     rdfs:label "Philosopher"@en ,
                "Filósofo"@pt ,
                "Filósofo"@es ;
-    rdfs:comment "A person engaged or learned in philosophy" @en ,
+    rdfs:comment "A person engaged or learned in philosophy"@en ,
                  "Uma pessoa que pratica ou versada em filosofia"@pt ;
     rdfs:subClassOf hist:Person .
 
@@ -113,7 +113,7 @@ hist:Scientist a rdfs:Class ;
     rdfs:label "Scientist"@en ,
                "Cientista"@pt ,
                "Científico"@es ;
-    rdfs:comment "A person engaged or learned in science" @en ,
+    rdfs:comment "A person engaged or learned in science"@en ,
                  "Uma pessoa que pratica ou versada em ciência"@pt ;
     rdfs:subClassOf hist:Person .
 
@@ -121,7 +121,7 @@ hist:Artist a rdfs:Class ;
     rdfs:label "Artist"@en ,
                "Artista"@pt ,
                "Artista"@es ;
-    rdfs:comment "A person engaged in the creation of art" @en ,
+    rdfs:comment "A person engaged in the creation of art"@en ,
                  "Uma pessoa dedicada à criação de arte"@pt ;
     rdfs:subClassOf hist:Person .
 
@@ -129,7 +129,7 @@ hist:Writer a rdfs:Class ;
     rdfs:label "Writer"@en ,
                "Escritor"@pt ,
                "Escritor"@es ;
-    rdfs:comment "A person who writes or has written something" @en ,
+    rdfs:comment "A person who writes or has written something"@en ,
                  "Uma pessoa que escreve ou escreveu algo"@pt ;
     rdfs:subClassOf hist:Person .
 
@@ -137,7 +137,7 @@ hist:Explorer a rdfs:Class ;
     rdfs:label "Explorer"@en ,
                "Explorador"@pt ,
                "Explorador"@es ;
-    rdfs:comment "A person who explores unfamiliar territory" @en ,
+    rdfs:comment "A person who explores unfamiliar territory"@en ,
                  "Uma pessoa que explora território desconhecido"@pt ;
     rdfs:subClassOf hist:Person .
 
@@ -145,7 +145,7 @@ hist:Royalty a rdfs:Class ;
     rdfs:label "Royalty"@en ,
                "Realeza"@pt ,
                "Realeza"@es ;
-    rdfs:comment "A person of royal status" @en ,
+    rdfs:comment "A person of royal status"@en ,
                  "Uma pessoa de estatuto real"@pt ;
     rdfs:subClassOf hist:Person .
 
