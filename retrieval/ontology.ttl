@@ -1,0 +1,176 @@
+@prefix hist: <http://ontology.example.org/history#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Ontology Metadata
+
+hist: a owl:ontology ;
+    rdfs:comment "An historical ontology representing events and people connected to them"@en ,
+                 "Uma ontologia histórica representativa de eventos e pessoas conectadas a eles"@pt ,
+                 "Una ontología histórica que representa eventos y personas relacionadas con ellos."@es .
+
+# Base Classes
+
+# Person and its properties
+hist:Person a rdfs:Class ;
+    rdfs:label "Person"@en ,
+               "Pessoa"@pt ,
+               "Persona"@es ;
+    rdfs:comment "A person of historical relevance."@en ,
+                 "Uma pessoa historicamente relevante"@pt .
+
+hist:birthDate a owl:DatatypeProperty ;
+    rdfs:domain hist:Person ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "Birth Date"@en ,
+               "Data de Nascimento"@pt ,
+               "Fecha de Nacimiento";
+    rdfs:comment "The date of a person's birth"@en ,
+                 "A data de nascimento de uma pessoa"@pt .
+
+hist:deathDate a owl:DatatypeProperty ;
+    rdfs:domain hist:Person ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "Death Date"@en ,
+               "Data de Falecimento"@pt ,
+               "Fecha de Muerte"@es ;
+    rdfs:comment "The date of a person's death"@en ,
+                 "A data de falecimento de uma pessoa"@pt .
+
+# Event and its properties
+
+hist:Event a rdfs:Class ;
+    rdfs:label "Event"@en ,
+               "Evento"@pt ,
+               "Evento"@es ;
+    rdfs:comment "An historical event"@en ,
+                 "Um evento histórico"@pt .
+
+hist:startDate a owl:DatatypeProperty ;
+    rdfs:domain hist:Event ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "Start Date"@en ,
+               "Data de Começo"@pt ,
+               "Fecha de Inicio"@es ;
+    rdfs:comment "The starting date of an event"@en ,
+                 "A data de começo de um evento"@pt .
+
+hist:endDate a owl:DatatypeProperty ;
+    rdfs:domain hist:Event ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "End Date"@en ,
+               "Data de Término"@pt ,
+               "Fecha de Finalización"@es ;
+    rdfs:comment "The date of an event's end"@en ,
+                 "A data do fim de um evento"@pt .
+
+# Person sub classes
+
+hist:Politician a rdfs:Class ;
+    rdfs:label "Politician"@en ,
+               "Político"@pt ,
+               "Político"@es ;
+    rdfs:comment "A person who held political positions"@en ,
+                 "Uma pessoa que exerceu cargos políticos"@pt ;
+    rdfs:subClassOf hist:Person .
+
+hist:termPeriod a owl:DatatypeProperty ;
+    rdfs:domain hist:Politician ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "Term"@en ,
+               "Mandato"@pt ,
+               "Mandato"@es ;
+    rdfs:comment "The period of time a politician's term lasted for"@en ,
+                 "O período de tempo que um político exerceu o mandato"@pt .
+
+hist:Militarian a rdfs:Class ;
+    rdfs:label "Militarian"@en ,
+               "Militar"@pt ,
+               "Militar"@es ;
+    rdfs:comment "A person involved in military service"@en ,
+                 "Uma pessoa envolvida em serviço militar"@pt ;
+    rdfs:subClassOf hist:Person .
+
+hist:militaryService a owl:DatatypeProperty ;
+    rdfs:domain hist:Militarian ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "Military Service"@en ,
+               "Serviço Militar"@pt ,
+               "Servicio Militar"@es ;
+    rdfs:comment "The period of time spent in military service"@en ,
+                 "O período de tempo em serviço militar"@pt .
+
+hist:Philosopher a rdfs:Class ;
+    rdfs:label "Philosopher"@en ,
+               "Filósofo"@pt ,
+               "Filósofo"@es ;
+    rdfs:comment "A person engaged or learned in philosophy" @en ,
+                 "Uma pessoa que pratica ou versada em filosofia"@pt ;
+    rdfs:subClassOf hist:Person .
+
+hist:Scientist a rdfs:Class ;
+    rdfs:label "Scientist"@en ,
+               "Cientista"@pt ,
+               "Científico"@es ;
+    rdfs:comment "A person engaged or learned in science" @en ,
+                 "Uma pessoa que pratica ou versada em ciência"@pt ;
+    rdfs:subClassOf hist:Person .
+
+hist:Artist a rdfs:Class ;
+    rdfs:label "Artist"@en ,
+               "Artista"@pt ,
+               "Artista"@es ;
+    rdfs:comment "A person engaged in the creation of art" @en ,
+                 "Uma pessoa dedicada à criação de arte"@pt ;
+    rdfs:subClassOf hist:Person .
+
+hist:Writer a rdfs:Class ;
+    rdfs:label "Writer"@en ,
+               "Escritor"@pt ,
+               "Escritor"@es ;
+    rdfs:comment "A person who writes or has written something" @en ,
+                 "Uma pessoa que escreve ou escreveu algo"@pt ;
+    rdfs:subClassOf hist:Person .
+
+hist:Explorer a rdfs:Class ;
+    rdfs:label "Explorer"@en ,
+               "Explorador"@pt ,
+               "Explorador"@es ;
+    rdfs:comment "A person who explores unfamiliar territory" @en ,
+                 "Uma pessoa que explora território desconhecido"@pt ;
+    rdfs:subClassOf hist:Person .
+
+hist:Royalty a rdfs:Class ;
+    rdfs:label "Royalty"@en ,
+               "Realeza"@pt ,
+               "Realeza"@es ;
+    rdfs:comment "A person of royal status" @en ,
+                 "Uma pessoa de estatuto real"@pt ;
+    rdfs:subClassOf hist:Person .
+
+# Events
+
+hist:War a rdfs:Class ;
+    rdfs:label "War"@en ,
+               "Guerra"@pt ,
+               "Guerra"@es ;
+    rdfs:subClassOf hist:Event .
+
+hist:Battle a rdfs:Class ;
+    rdfs:label "Battle"@en ,
+               "Batalha"@pt ,
+               "Batalla"@es ;
+    rdfs:subClassOf hist:Event .
+
+hist:Revolution a rdfs:Class ;
+    rdfs:label "Revolution"@en ,
+               "Revolução"@pt ,
+               "Revolución"@es ;
+    rdfs:subClassOf hist:Event .
+
+hist:Protest a rdfs:Class ;
+    rdfs:label "Protest"@en ,
+               "Protesto"@pt ,
+               "Protesta"@es ;
+    rdfs:subClassOf hist:Event .
