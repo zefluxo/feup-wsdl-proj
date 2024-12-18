@@ -6,6 +6,8 @@ from rdflib import Graph
 import rdflib.term
 from rdflib.plugins.sparql import prepareQuery
 
+from itertools import permutations
+
 # Entity_keywords: ["napoleon", "bonaparte" , "napoleon bonaparte"], Label: Person
 # na search
 # -> search(napoleon), search(bonaparte), search(napoleon bonaparte)
@@ -16,10 +18,9 @@ from rdflib.plugins.sparql import prepareQuery
 ## Input Entity -> "Text_Name", "Text_Location (initial_char_number, final_char_number)" "Keywords", "URI"
 
 class Entity:
-    def __init__(self, text_name, text_location, keywords, label):
+    def __init__(self, text_name, text_location, label):
         self.text_name = text_name 
         self.text_location = text_location # saves the start char number
-        self.keywords = keywords 
         self.label = label # Person, Event
 
         self.uri = None
@@ -40,8 +41,7 @@ def run_spacy(text_input, language):
     entity_list = []    
 
     # group entities by labels if they are found near each other
-    current_entity_text = ""
-    current_entity_keywords = []
+    current_entity_text = []
     current_label = None
     current_start = 0
     
@@ -53,44 +53,47 @@ def run_spacy(text_input, language):
 
             if current_entity_text:
                 # label changed -> save scouted entity
-                new_entity = Entity(text_name=current_entity_text, text_location=current_start, keywords=current_entity_keywords, label=current_label)
+                new_entity = Entity(text_name=" ".join(current_entity_text), text_location=current_start, label=current_label)
                 entity_list.append(new_entity)
                 
-            # else start new entity group
-            current_entity_text = ""
-            current_entity_keywords = []
+            # else and default start new entity group
             current_start = ent.end_char
             current_label = ent.label_
+            current_entity_text = []
 
-        # same label -> append to current scouted entity
-        current_entity_keywords.append(ent.text)
-        current_entity_text += ent.text + " "
-        current_entity_keywords.append(current_entity_text)
-
+        # same label -> append new token to current scouted entity
+        current_entity_text.append(ent.text)
 
     # append the last group
     if current_entity_text:
-        new_entity = Entity(text_name=current_entity_text, text_location=current_start, keywords=current_entity_keywords, label=current_label)
+        new_entity = Entity(text_name=" ".join(current_entity_text), text_location=current_start, label=current_label)
         entity_list.append(new_entity)
 
     print(vars(entity_list[0]))
 
     filtered_list = list(filter(lambda entity: entity.label in ["PERSON", "EVENT", "WORK_OF_ART"], entity_list))
-    
+    return filtered_list
  
 
 
 # entity list consists of ["Entity_name", "Entity_label"] entries
 def query_knowledge_base(entity_list, graph: Graph):
     
+    stop_words = {"of", "the"} 
     
     entities_found = []
 
     query = ""
     for entity in entity_list:
         
-        # print(f"\nentity!: {entity.text_name} : {entity.label}")
+        # try to find entity in database through combinations of its full text name
+        trimmed_name = [word for word in entity.text_name.split() if word.lower() not in stop_words]
 
+        combinations = []
+        for word in range(1, len(trimmed_name) + 1): 
+            combinations.extend([" ".join(p) for p in permutations(trimmed_name, word)])
+        
+        # query based on label
         match entity.label:
 
             case "PERSON":
@@ -98,32 +101,49 @@ def query_knowledge_base(entity_list, graph: Graph):
                         SELECT ?entity ?type ?name ?predicate ?object
                         WHERE {{
                             ?entity a ?type ;
-                            hist:alias ?name ;
-                            ?predicate ?object .
+                                    hist:alias ?name ;
+                                    ?predicate ?object .
 
                             ?type rdfs:subClassOf* hist:Person .
-                            """
-                
-                for keyword in entity.keywords:
-                    query += f"""FILTER (REGEX(LCASE(?name), "{keyword}", "i"))"""
-                                    
-                query += "}}"                        
-                        
+                            FILTER (
+                                REGEX(LCASE(?name), "{entity.text_name}", "i") ||
+                        """
+
+                # Add OR conditions for combinations
+                if combinations:
+                            query += " || ".join([f'REGEX(LCASE(?name), "{combination}", "i")' for combination in combinations])
+
+                # Close the FILTER clause and WHERE block
+                query += """
+                    )
+                }
+                """
+
 
             case "EVENT":
                 query = f"""
                         SELECT ?entity ?type ?name ?predicate ?object
                         WHERE {{
                             ?entity a ?type ;
-                            hist:alias ?name ;
-                            ?predicate ?object .
+                                    hist:alias ?name ;
+                                    ?predicate ?object .
 
                             ?type rdfs:subClassOf* hist:Event .
-                            FILTER (REGEX(LCASE(?name), "{entity[0]}", "i"))
-                        }}
+                            FILTER (
+                                REGEX(LCASE(?name), "{entity.text_name}", "i") ||
                         """
 
+                # Add OR conditions for combinations
+                if combinations:
+                            query += " || ".join([f'REGEX(LCASE(?name), "{combination}", "i")' for combination in combinations])
 
+                # Close the FILTER clause and WHERE block
+                query += """
+                    )
+                }
+                """
+
+        
         current_result = graph.query(query)
 
         current_result_python = []
@@ -140,16 +160,7 @@ def query_knowledge_base(entity_list, graph: Graph):
             pprint(result_row)
         
         entities_found.append(current_result_python)
-
-
-    """ for s, p in entities_found:
-        print(s)
-        print(p)
-        print('---------------') """
-    
-    #return result
-
-
+        
     
 #text_input = """Napoleon Bonaparte rose to prominence during the French Revolution.
 #    He became a key figure in shaping European politics. The Battle of Waterloo marked his ultimate defeat.
