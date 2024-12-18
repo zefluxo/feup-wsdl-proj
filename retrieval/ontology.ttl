@@ -1,4 +1,6 @@
 @prefix hist: <http://ontology.example.org/history#> .
+@prefix dbo: <http://dbpedia.org/ontology#> .
+@prefix dbr: <http://dbpedia.org/resource#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -47,23 +49,43 @@ hist:Event a rdfs:Class ;
     rdfs:comment "An historical event"@en ,
                  "Um evento histórico"@pt .
 
-hist:startDate a owl:DatatypeProperty ;
+hist:date a owl:DatatypeProperty ;
     rdfs:domain hist:Event ;
     rdfs:range xsd:dateTime ;
-    rdfs:label "Start Date"@en ,
-               "Data de Começo"@pt ,
-               "Fecha de Inicio"@es ;
-    rdfs:comment "The starting date of an event"@en ,
-                 "A data de começo de um evento"@pt .
+    rdfs:label "Date"@en ,
+               "Data"@pt ,
+               "Fecha"@es ;
+    rdfs:comment "The date of an event"@en ,
+                 "A data de um evento"@pt .
 
-hist:endDate a owl:DatatypeProperty ;
+hist:place a owl:DatatypeProperty ;
     rdfs:domain hist:Event ;
-    rdfs:range xsd:dateTime ;
-    rdfs:label "End Date"@en ,
-               "Data de Término"@pt ,
-               "Fecha de Finalización"@es ;
-    rdfs:comment "The date of an event's end"@en ,
-                 "A data do fim de um evento"@pt .
+    rdfs:range [a owl:Class ;
+                  owl:unionOf (dbo:place rdfs:Literal)] ;
+    rdfs:label "Place"@en ,
+               "Localização"@pt ,
+               "Localización"@es ;
+    rdfs:comment "The location an event took place"@en ,
+                 "A localização de um evento"@pt .
+
+# Common properties
+
+hist:alias a owl:DatatypeProperty ;
+    rdfs:domain [ a owl:Class ;
+                  owl:unionOf (hist:Person hist:Event)] ;
+    rdfs:range rdfs:Literal ;
+    rdfs:label "Alias"@en ;
+    rdfs:comment "The alias of an entity"@en .
+
+hist:description a owl:DatatypeProperty ;
+    rdfs:domain [ a owl:Class ;
+                  owl:unionOf (hist:Person hist:Event)] ;
+    rdfs:range rdfs:Literal ;
+    rdfs:label "Description"@en ,
+               "Descrição"@pt ,
+               "Descripciõn"@es ;
+    rdfs:comment "The description of an entity"@en ,
+                 "A descrição de uma entidade"@pt .
 
 # Person sub classes
 
@@ -163,13 +185,19 @@ hist:Battle a rdfs:Class ;
                "Batalla"@es ;
     rdfs:subClassOf hist:Event .
 
+hist:Conflict a rdfs:Class ;
+    rdfs:label "Conflict"@en ,
+               "Conflito"@pt ,
+               "Conflicto"@es ;
+    rdfs:subClassOf hist:Event .
+
 hist:Revolution a rdfs:Class ;
     rdfs:label "Revolution"@en ,
                "Revolução"@pt ,
                "Revolución"@es ;
     rdfs:subClassOf hist:Event .
 
-hist:Protest a rdfs:Class ;
+hist:Coup a rdfs:Class ;
     rdfs:label "Protest"@en ,
                "Protesto"@pt ,
                "Protesta"@es ;
