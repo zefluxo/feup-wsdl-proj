@@ -1,0 +1,17 @@
+PREFIX yago: <http://yago-knowledge.org/resource/>
+PREFIX schema: <http://schema.org/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?entity ?label ?location
+WHERE {
+
+    ?entity a yago:Coup_d_u0027_état .
+    ?entity rdfs:label ?label .
+    ?entity schema:location ?location .
+
+    FILTER(LANG(?label) IN ('en', 'pt', 'es'))
+
+}
+
+LIMIT 5000

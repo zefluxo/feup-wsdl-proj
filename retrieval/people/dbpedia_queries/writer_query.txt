@@ -1,0 +1,18 @@
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbp: <http://dbpedia.org/property/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT DISTINCT ?entity ?label ?abstract ?birthDate ?deathDate
+WHERE { 
+  ?entity a dbo:Writer .
+  ?entity rdfs:label ?label .
+  ?entity dbo:abstract ?abstract .
+  ?entity dbo:birthDate ?birthDate .
+  OPTIONAL { ?entity dbo:deathDate ?deathDate }
+                       
+  FILTER(LANG(?abstract) IN ('en', 'pt', 'es'))
+}
+
+LIMIT 5000

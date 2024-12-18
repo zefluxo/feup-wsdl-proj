@@ -12,17 +12,13 @@ def fetch_events(drivers, graph: Graph):
 
 def dbpedia_fetch(driver, graph: Graph):
     
-    dbr = Namespace(graph.namespace_manager.store.namespace('dbr'))
-    hist = Namespace(graph.namespace_manager.store.namespace('hist'))
-    
-    graph.bind(dbr, 'dbr')
-    
+    hist = Namespace(graph.namespace_manager.store.namespace('hist'))   
     dbpedia_queries = Path("retrieval/events/dbpedia_queries").iterdir()
     
     for query in dbpedia_queries:
         
         event_type = query.name.split('_')[0].capitalize()
-        print(f'Fetching {event_type}...')
+        print(f'[EVENTS] Fetching {event_type}s from DBPedia...')
 
         with query.open('r') as file:
             
@@ -53,10 +49,31 @@ def dbpedia_fetch(driver, graph: Graph):
 
                     #for same in same_events: graph.add((event, rdflib.namespace.OWL.sameAs, same))
 
-            except Exception as e: print("[ERROR] " + str(e.with_traceback()))
+            except Exception as e: print(f'[ERROR] {str(e.with_traceback())}')
     
 
 def yago_fetch(driver, graph: Graph):
     
+    hist = Namespace(graph.namespace_manager.store.namespace('hist'))
     yago_queries = Path("retrieval/events/yago_queries").iterdir()
+    
+    for query in yago_queries:
+        
+        event_type = query.name.split('_')[0].capitalize()        
+        print(f'[EVENTS] Fetching {event_type}s from DBPedia...')
+
+        with query.open('r') as file:
+            
+            driver.setQuery(file.read())
+            
+            try:
+                
+                result = driver.queryAndConvert()
+                
+                for entity in result['results']['bindings']:
+                    print(entity)
+                    exit(0)
+                
+            except Exception as e: print(f'[ERROR] {str(e.with_traceback())}')
+            
     return 0

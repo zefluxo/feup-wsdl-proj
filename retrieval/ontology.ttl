@@ -83,7 +83,7 @@ hist:description a owl:DatatypeProperty ;
     rdfs:range rdfs:Literal ;
     rdfs:label "Description"@en ,
                "Descrição"@pt ,
-               "Descripciõn"@es ;
+               "Descripción"@es ;
     rdfs:comment "The description of an entity"@en ,
                  "A descrição de uma entidade"@pt .
 
@@ -99,7 +99,8 @@ hist:Politician a rdfs:Class ;
 
 hist:termPeriod a owl:DatatypeProperty ;
     rdfs:domain hist:Politician ;
-    rdfs:range xsd:dateTime ;
+    rdfs:range [ a owl:Class ;
+                   owl:unionOf (dbo:TimePeriod xsd:dateTime)] ;
     rdfs:label "Term"@en ,
                "Mandato"@pt ,
                "Mandato"@es ;
@@ -116,7 +117,8 @@ hist:Militarian a rdfs:Class ;
 
 hist:militaryService a owl:DatatypeProperty ;
     rdfs:domain hist:Militarian ;
-    rdfs:range xsd:dateTime ;
+    rdfs:range [ a owl:Class ;
+                   owl:unionOf (dbo:MilitaryService xsd:dateTime)] ;
     rdfs:label "Military Service"@en ,
                "Servico Militar"@pt ,
                "Servicio Militar"@es ;
@@ -170,6 +172,26 @@ hist:Royalty a rdfs:Class ;
     rdfs:comment "A person of royal status"@en ,
                  "Uma pessoa de estatuto real"@pt ;
     rdfs:subClassOf hist:Person .
+
+hist:activeYearsStartYear a owl:DatatypeProperty ;
+    rdfs:domain hist:Royalty ;
+    rdfs:range [ a owl:Class ;
+                   owl:unionOf (xsd:gYear xsd:dateTime)] ;
+    rdfs:label "Active Years Starting Year"@en ,
+               "Primeiro Ano de Anos Ativo"@pt ,
+               "Primer año de años ativos"@es ;
+    rdfs:comment "The first year in a royalty's active service"@en ,
+                 "O primeiro ano de serviço ativo real"@pt .
+
+hist:activeYearsEndYear a owl:DatatypeProperty ;
+    rdfs:domain hist:Royalty ;
+    rdfs:range [ a owl:Class ;
+                   owl:unionOf (xsd:gYear xsd:dateTime)] ;
+    rdfs:label "Active Years Ending Year"@en ,
+               "Último Ano de Anos Ativos"@pt ,
+               "Último año de años ativos"@es ;
+    rdfs:comment "The last year in a royalty's active service"@en ,
+                 "O último ano de serviço ativo real"@pt .
 
 # Events
 
