@@ -15,4 +15,4 @@ WHERE {
   FILTER(LANG(?abstract) IN ('en', 'pt', 'es'))
 }
 
-LIMIT 5000
+LIMIT 50000

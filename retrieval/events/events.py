@@ -6,9 +6,10 @@ from rdflib.namespace import XSD, RDF
 from utils import date_parser
 
 def fetch_events(drivers, graph: Graph):
-    
+    print('')
     dbpedia_fetch(drivers[0], graph)
-    #yago_fetch(drivers[1], graph)
+    yago_fetch(drivers[1], graph)
+    print('')
 
 def dbpedia_fetch(driver, graph: Graph):
     
@@ -29,12 +30,12 @@ def dbpedia_fetch(driver, graph: Graph):
                 result = driver.queryAndConvert()
 
                 for entity in result['results']['bindings']:
-                
+                    
                     resource_name = entity['entity']['value'].split('/')[-1].replace("-", "_").replace("–", "_").replace("'","")
                     event = hist[resource_name]
-                    event_name = Literal(entity['label']['value'])
+                    event_name = Literal(entity['label']['value'], lang = entity['label']['xml:lang'])
                     event_date = date_parser.parse(entity['date']['value'])
-                    event_description = Literal(entity['abstract']['value'])
+                    event_description = Literal(entity['abstract']['value'], lang = entity['abstract']['xml:lang'])
                     event_place = Literal(entity['place']['value']) if not entity['place']['type'] == 'uri' else URIRef(entity['place']['value'])
                     #same_events = [URIRef(same) for same in entity['sameAs']['value'].split(',')]
 
@@ -60,7 +61,7 @@ def yago_fetch(driver, graph: Graph):
     for query in yago_queries:
         
         event_type = query.name.split('_')[0].capitalize()        
-        print(f'[EVENTS] Fetching {event_type}s from DBPedia...')
+        print(f'[EVENTS] Fetching {event_type}s from Yago...')
 
         with query.open('r') as file:
             
@@ -71,8 +72,20 @@ def yago_fetch(driver, graph: Graph):
                 result = driver.queryAndConvert()
                 
                 for entity in result['results']['bindings']:
-                    print(entity)
-                    exit(0)
+                    
+                    
+                    resource_name = entity['entity']['value'].split('/')[-1]
+                    event = hist[resource_name]
+                    event_name = Literal(entity['label']['value'], lang = entity['label']['xml:lang'])
+                    event_place = Literal(entity['location']['value'], lang = entity['location']['xml:lang']) if not entity['location']['type'] == 'uri' else URIRef(entity['location']['value'])
+                    
+                    graph.add((event, RDF.type, hist[event_type]))
+                    graph.add((event, hist['alias'], event_name))
+                    graph.add((event, hist['place'], event_place))
+                    
+                    if 'superEvent' in entity:
+                        super_event = Literal(entity['superEvent']['value'], lang = entity['superEvent']['xml:lang']) if not entity['superEvent']['type'] == 'uri' else hist[entity['superEvent']['value'].split('/')[-1]]
+                        graph.add((event, hist['superEvent'], super_event))
                 
             except Exception as e: print(f'[ERROR] {str(e.with_traceback())}')
             

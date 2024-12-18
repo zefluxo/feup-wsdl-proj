@@ -1,6 +1,7 @@
 @prefix hist: <http://ontology.example.org/history#> .
 @prefix dbo: <http://dbpedia.org/ontology#> .
 @prefix dbr: <http://dbpedia.org/resource#> .
+@prefix yago: <http://yago-knowledge.org/resource/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -61,12 +62,22 @@ hist:date a owl:DatatypeProperty ;
 hist:place a owl:DatatypeProperty ;
     rdfs:domain hist:Event ;
     rdfs:range [a owl:Class ;
-                  owl:unionOf (dbo:place rdfs:Literal)] ;
+                  owl:unionOf (dbo:Place rdfs:Literal yago:Historical_region)] ;
     rdfs:label "Place"@en ,
                "Localização"@pt ,
                "Localización"@es ;
     rdfs:comment "The location an event took place"@en ,
                  "A localização de um evento"@pt .
+
+hist:superEvent a owl:DatatypeProperty ;
+    rdfs:domain hist:Event ;
+    rdfs:range [a owl:Class ;
+                  owl:unionOf (hist:Event rdfs:Literal )] ;
+    rdfs:label "Super Event"@en ,
+               "Evento Maior"@pt ,
+               "Gran Evento"@es ;
+    rdfs:comment "The event the current event is a part of"@en ,
+                 "O evento a qual o evento atual faz parte"@pt .
 
 # Common properties
 
@@ -107,6 +118,16 @@ hist:termPeriod a owl:DatatypeProperty ;
     rdfs:comment "The period of time a politician's term lasted for"@en ,
                  "O período de tempo que um político exerceu o mandato"@pt .
 
+hist:memberOf a owl:DatatypeProperty ;
+    rdfs:domain hist:Politician ;
+    rdfs:range [ a owl:Class ;
+                   owl:unionOf (yago:Political_party rdfs:Literal)] ;
+    rdfs:label "Member of"@en ,
+               "Membro de"@pt ,
+               "Miembro de"@es ;
+    rdfs:comment "The party a politician is/was a part of"@en ,
+                 "O partido a que um político pertence/pertencia"@pt .
+
 hist:Militarian a rdfs:Class ;
     rdfs:label "Militarian"@en ,
                "Militar"@pt ,
@@ -124,6 +145,16 @@ hist:militaryService a owl:DatatypeProperty ;
                "Servicio Militar"@es ;
     rdfs:comment "The period of time spent in military service"@en ,
                  "O período de tempo em serviço militar"@pt .
+
+hist:award a owl:DatatypeProperty ;
+    rdfs:domain hist:Militarian ;
+    rdfs:range [ a owl:Class ;
+                   owl:unionOf (yago:Order rdfs:Literal)] ;
+    rdfs:label "Award"@en ,
+               "Prémio"@pt ,
+               "Premio"@es ;
+    rdfs:comment "An award attributed to a militarian"@en ,
+                 "Um prémio atribuído a um militar"@pt .
 
 hist:Philosopher a rdfs:Class ;
     rdfs:label "Philosopher"@en ,
