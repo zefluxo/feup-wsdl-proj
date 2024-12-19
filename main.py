@@ -57,9 +57,9 @@ if st.button("Submit"):
             for entity in identified_entities:
 
 
-                data, entity = identified_entities[entity]
-                end = entity.text_location
-                text = entity.text_name
+                data, my_entity = identified_entities[entity]
+                end = my_entity.text_location
+                text = my_entity.text_name
                 start = end - len(text)
 
                 pattern = r'\b' + re.escape(text) + r'\b'  # Ensure we match whole words only
@@ -70,27 +70,28 @@ if st.button("Submit"):
                                 background-color: white;
                                 border: 1px solid #ccc;
                                 padding: 5px;
-                                width: 250px;
+                                width: 700px;
                                 top: 20px;
                                 left: 0;
                                 z-index: 10; }}"""
                 final_text = re.sub(pattern, span_tag, final_text)
                 dict_entities[text] = ""
             
-                st.write(f"{entity} of type {data['type']}:")
+                st.write(f"**{entity}** of type {data['type']}:")
                 for key, value in data.items():
                     if key == 'type' or value == "Unspecified": continue
 
                     formatted_key = key if key not in format_dict.keys() else format_dict[key]
-                    dict_entities[text] += f"{str(formatted_key).capitalize()}: {data[key]}"
-                    st.write(f"{str(formatted_key).capitalize()}: {data[key]}")
+                    dict_entities[text] += f"""{str(formatted_key).capitalize()}: {data[key]}"""
+                    st.write(f"**{str(formatted_key).capitalize()}**: {data[key]}")
+                st.divider()    
             css += "</style>"
             for entity in dict_entities.keys():
                 css=css.replace(f"content-from-{entity.lower().replace(' ','-')}", dict_entities[entity])
-            
-            print(css)
+          
             st.markdown(css, unsafe_allow_html=True)
             st.markdown(final_text, unsafe_allow_html=True)
+            st.divider()
         
 
     else:

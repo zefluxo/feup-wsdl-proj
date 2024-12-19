@@ -30,7 +30,7 @@ class Entity:
                 f"label='{self.label}', "
                 f"resource={self.resource})")
 
-# load multilingual spacy model
+#  multilingual spacy model
 
 def run_spacy(text_input, language):
 
@@ -45,11 +45,10 @@ def run_spacy(text_input, language):
         case "Português":
             lang = 'pt'
             nlp = spacy.load("pt_core_news_lg")
-        case _:
-            lang = 'en'
-            nlp = spacy.load("en_core_web_trf")
+        
 
     input_entities = nlp(text_input)
+
     entity_list = []    
 
     # group entities by labels if they are found near each other
@@ -85,7 +84,7 @@ def run_spacy(text_input, language):
         new_entity = Entity(text_name=" ".join(current_entity_text), text_location=current_start, label=current_label)
         entity_list.append(new_entity)
 
-    filtered_list = list(filter(lambda entity: entity.label in ["PERSON", "EVENT", "WORK_OF_ART"], entity_list))
+    filtered_list = list(filter(lambda entity: entity.label in ["PERSON", "PER", "MISC", "EVENT", "WORK_OF_ART"], entity_list))
     return filtered_list, lang
  
 def sparql_to_resource(sparql_object):
@@ -109,7 +108,9 @@ def query_for_person(keyword, graph: Graph, language):
                         ?entity hist:alias ?name .
                         ?entity hist:birthDate ?birthDate .
                         OPTIONAL {{ ?entity hist:deathDate ?deathDate }}
-                        OPTIONAL {{ ?entity hist:description ?description }}
+                        OPTIONAL {{?entity hist:description ?description .
+                                    FILTER(LANG(?description) = '' || LANGMATCHES(LANG(?description), '{language}'))
+                                }}
                         OPTIONAL {{ ?entity hist:award ?award }}
                         OPTIONAL {{ ?entity hist:memberOf ?memberOf }}
                         OPTIONAL {{ ?entity hist:termPeriod ?termPeriod }}
@@ -141,14 +142,17 @@ def query_for_event(keyword, graph: Graph, language):
                 ?entity a ?type .
                 ?entity hist:alias ?name .
                 ?entity hist:place ?place .
-                OPTIONAL {{ ?entity hist:description ?description }}
+                OPTIONAL {{
+                    ?entity hist:description ?description .
+                    FILTER(LANG(?description) = '' || LANGMATCHES(LANG(?description), '{language}'))
+                }}
                 OPTIONAL {{ ?entity hist:date ?date }}
                 OPTIONAL {{ ?entity hist:superEvent ?superEvent }}
 
                 ?type rdfs:subClassOf* hist:Event .
                 FILTER (REGEX(LCASE(?name), "{keyword}", "i"))
                 FILTER(LANG(?name) IN ('{language}'))
-                FILTER(LANG(?description) IN ('{language}'))
+                
                 }}
             """
 
@@ -183,15 +187,23 @@ def query_knowledge_base(entity_list, graph: Graph, language):
         query_results = []
         
         # query based on label
+
+        print(entity.text_name)
+        print(entity.label)
+
         match entity.label:
 
-            case "PERSON":
+            case "PERSON" | "PER"  :
+
+                print("HI")
+                
+
                 
                 query_results = query_for_person(entity.text_name, graph, language)
 
                 # try to find entity in database through combinations of its full text name
                 if len(query_results) == 0:
-                    print(f"""\nNo results found for full text: "{entity.text_name}". Now trying combinations... """)
+                    print(f"""\nNo results found for full text: "{entity.text_name}" of type {entity.label}. Now trying combinations... """)
                 
                     trimmed_name = [word for word in entity.text_name.split() if word.lower() not in stop_words]
 
@@ -207,13 +219,13 @@ def query_knowledge_base(entity_list, graph: Graph, language):
                         i += 1
 
 
-            case "EVENT":
+            case "EVENT"| "MISC":
 
                 query_results = query_for_event(entity.text_name, graph, language)
 
                 # try to find entity in database through combinations of its full text name
                 if len(query_results) == 0:
-                    print(f"""\nNo results found for full text "{entity.text_name}". Now trying combinations... """)
+                    print(f"""\nNo results found for full text "{entity.text_name}" of type {entity.label}. Now trying combinations... """)
                 
                     trimmed_name = [word for word in entity.text_name.split() if word.lower() not in stop_words]
 
