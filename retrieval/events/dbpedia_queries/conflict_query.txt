@@ -13,8 +13,9 @@ WHERE {
   ?entity dbp:place ?place .
                        
   FILTER(LANG(?abstract) IN ('en', 'pt', 'es'))
+  FILTER(LANG(?label) IN ('en', 'pt', 'es'))
   FILTER(CONTAINS(LCASE(STR(?label)), "conflict"))
   FILTER(DATATYPE(?date) = xsd:date)
 }
 
-LIMIT 10000
+LIMIT 20000

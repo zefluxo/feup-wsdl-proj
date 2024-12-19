@@ -15,6 +15,7 @@ WHERE {
   OPTIONAL { ?entity dbo:activeYearsEndYear ?activeYearsEndYear }
                        
   FILTER(LANG(?abstract) IN ('en', 'pt', 'es'))
+  FILTER(LANG(?label) IN ('en', 'pt', 'es'))
 }
 
-LIMIT 10000
+LIMIT 20000

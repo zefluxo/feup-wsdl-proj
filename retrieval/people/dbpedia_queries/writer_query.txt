@@ -13,6 +13,7 @@ WHERE {
   OPTIONAL { ?entity dbo:deathDate ?deathDate }
                        
   FILTER(LANG(?abstract) IN ('en', 'pt', 'es'))
+  FILTER(LANG(?label) IN ('en', 'pt', 'es'))
 }
 
-LIMIT 50000
+LIMIT 5000

@@ -1,10 +1,6 @@
 import spacy
-from pprint import pprint
-from spacy.training.example import Example
-
 from rdflib import Graph
-from rdflib.plugins.sparql import prepareQuery
-
+from rdflib.namespace import Namespace, split_uri
 from itertools import permutations
 
 class RDFResource:
@@ -34,52 +30,6 @@ class Entity:
                 f"label='{self.label}', "
                 f"resource={self.resource})")
 
-class Person:
-    def __init__(self, type, name, birth_date, death_date, description, award, member_of, term_period, military_service, activeYearsStartYear, activeYearsEndYear):
-        self.name = name
-        self.type = type
-        self.birth_date = birth_date
-        self.death_date = death_date
-        self.description = description
-        self.award = award
-        self.member_of = member_of
-        self.term_period = term_period
-        self.military_service = military_service
-        self.activeYearsStartYear = activeYearsStartYear
-        self.activeYearsEndYear = activeYearsEndYear
-
-    def __repr__(self):
-        info = [f"Name: {self.name}"
-                f"Date of Birth (DOB): {self.birth_date}"
-                f"Date of Death (DOD): {self.death_date}"
-                f"Description: {self.description if self.description else 'Unspecified'}"]
-        if self.type == 'Politician':
-                info.append(f"Term Periods: {self.term_period}",
-                            f"Member of: {self.member_of}")
-        if self.type == 'Militarian':
-                info.append(f"Awards: {self.award}",
-                            f"Military Service: {self.military_service}")
-        if self.type == 'Royalty':
-                info.append(f"Starting year of their reign: {self.activeYearsStartYear}",
-                            f"Last year of their reign: {self.activeYearsEndYear if self.activeYearsEndYear else 'Still in power.'}")
-        return tuple(info)
-    
-class Event:
-    def __init__(self, type, name, description, date, place, superEvent):
-        self.type = type
-        self.name = name
-        self.description = description
-        self.date = date
-        self.place = place
-        self.superEvent = superEvent
-    
-    def __repr__(self):
-        info = [f"Name: {self.name}"
-                f"Date of Birth (DOB): {self.birth_date}"
-                f"Date of Death (DOD): {self.death_date}"
-                f"Description: {self.description if self.description else 'Unspecified'}"]
-
-
 # load multilingual spacy model
 
 def run_spacy(text_input, language):
@@ -91,10 +41,13 @@ def run_spacy(text_input, language):
             nlp = spacy.load("en_core_web_trf")
         case "Español":
             lang = 'es'
-            nlp = spacy.load("es_core_web_trf")
+            nlp = spacy.load("es_dep_news_trf")
         case "Português":
             lang = 'pt'
-            nlp = spacy.load("pt_core_web_trf")
+            nlp = spacy.load("pt_core_news_lg")
+        case _:
+            lang = 'en'
+            nlp = spacy.load("en_core_web_trf")
 
     input_entities = nlp(text_input)
     entity_list = []    
@@ -105,8 +58,7 @@ def run_spacy(text_input, language):
     current_start = 0
     
     for ent in input_entities.ents:
-        print(ent.text, ent.label_)
-
+        
         # stop if label is not repeated
         if current_label is None or ent.label_ != current_label:
 
@@ -166,36 +118,50 @@ def query_for_person(keyword, graph: Graph, language):
                 }}
             """
 
-    results = list(graph.query(query))
+    results = graph.query(query)
+    results_dict = {
+        
+        str(row['name']): {str(var): str(row[var]) for var in row.labels if var != 'entity' and var != 'name'}
+        for row in results
+        
+    }
     
-
-    return results
+    return results_dict
 
 def query_for_event(keyword, graph: Graph, language): 
     
     query = f"""
-            SELECT ?entity ?type ?name ?predicate ?object
+            SELECT ?entity ?type ?name ?description ?date ?place ?superEvent
             WHERE {{
-                ?entity a ?type ;
-                        hist:alias ?name ;
-
-                        ?predicate ?object .
+                ?entity a ?type .
+                ?entity hist:alias ?name .
+                ?entity hist:place ?place .
+                OPTIONAL {{ ?entity hist:description ?description }}
+                OPTIONAL {{ ?entity hist:date ?date }}
+                OPTIONAL {{ ?entity hist:superEvent ?superEvent }}
 
                 ?type rdfs:subClassOf* hist:Event .
                 FILTER (REGEX(LCASE(?name), "{keyword}", "i"))
-                FILTER(LANG(?abstract) IN ('{language}'))
+                FILTER(LANG(?name) IN ('{language}'))
+                FILTER(LANG(?description) IN ('{language}'))
                 }}
             """
 
-    results = list(graph.query(query))
+    results = graph.query(query)
+    results_dict = {
+        
+        str(row['name']): {str(var): str(row[var]) for var in row.labels if var != 'entity' and var != 'name'}
+        for row in results
+        
+    }
 
-    return results
-
+    return results_dict
 
 
 # entity list consists of ["Entity_name", "Entity_label"] entries
 def query_knowledge_base(entity_list, graph: Graph, language):
-
+    
+    hist = Namespace(graph.namespace_manager.store.namespace('hist'))
 
     match language:
         case 'en':
@@ -204,7 +170,9 @@ def query_knowledge_base(entity_list, graph: Graph, language):
             stop_words = ["el", "es", "en", "y", "de", "la", "que", "con"]
         case 'pt':
             stop_words = ["o", "é", "em", "e", "de", "a", "que", "com"]
-
+          
+    entity_data = dict()
+    
     for entity in entity_list:
 
         query_results = []
@@ -213,6 +181,7 @@ def query_knowledge_base(entity_list, graph: Graph, language):
         match entity.label:
 
             case "PERSON":
+                
                 query_results = query_for_person(entity.text_name, graph, language)
 
                 # try to find entity in database through combinations of its full text name
@@ -234,6 +203,7 @@ def query_knowledge_base(entity_list, graph: Graph, language):
 
 
             case "EVENT":
+
                 query_results = query_for_event(entity.text_name, graph, language)
 
                 # try to find entity in database through combinations of its full text name
@@ -257,14 +227,17 @@ def query_knowledge_base(entity_list, graph: Graph, language):
             print(f"""\n No results found for {entity.text_name} tagged as "{entity.label}". Skipping...""")
             continue
         
-        # query_results = query_results[0] # no disambiguation done here - we get the first matching entity 
-        print(f"Query results: {query_results}")
+        key_to_add = list(query_results.keys())[0]
+        data_dict = query_results[key_to_add]
+        data_dict = {key: (value if value != 'None' else "Unspecified") for key, value in data_dict.items()}
 
-        resource = sparql_to_resource(query_results)
-        entity.resource = resource
-        # pprint(f"object: {entity.resource}")
+        _, readable_type = split_uri(data_dict['type'])
+        data_dict['type'] = readable_type
+        
+        entity_data[key_to_add] = data_dict
+        
 
-    return entity_list
+    return entity_data
 
     
  
