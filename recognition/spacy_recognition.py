@@ -19,7 +19,7 @@ class RDFResource:
 class Entity:
     def __init__(self, text_name, text_location, label):
         self.text_name = text_name 
-        self.text_location = text_location # saves the start char number
+        self.text_location = text_location # saves the end char number
         self.label = label # Person, Event
 
         self.resource = None
@@ -56,21 +56,26 @@ def run_spacy(text_input, language):
     current_entity_text = []
     current_label = None
     current_start = 0
+
     
     for ent in input_entities.ents:
-        
+
+       
         # stop if label is not repeated
         if current_label is None or ent.label_ != current_label:
 
             if current_entity_text:
                 # label changed -> save scouted entity
+                print(current_start)
                 new_entity = Entity(text_name=" ".join(current_entity_text), text_location=current_start, label=current_label)
                 entity_list.append(new_entity)
                 
             # else and default start new entity group
+            
             current_start = ent.end_char
             current_label = ent.label_
             current_entity_text = []
+
 
         # same label -> append new token to current scouted entity
         current_entity_text.append(ent.text)
@@ -96,7 +101,7 @@ def sparql_to_resource(sparql_object):
     
 
 def query_for_person(keyword, graph: Graph, language): 
-    print(f"Querying for {keyword}")
+    # print(f"Querying for {keyword}")
     query = f"""
             SELECT ?entity ?type ?name ?birthDate ?deathDate ?description ?award ?memberOf ?termPeriod ?militaryService ?activeYearsStartYear ?activeYearsEndYear
             WHERE {{
@@ -186,7 +191,7 @@ def query_knowledge_base(entity_list, graph: Graph, language):
 
                 # try to find entity in database through combinations of its full text name
                 if len(query_results) == 0:
-                    print("\nNo results found for full text.")
+                    print(f"""\nNo results found for full text: "{entity.text_name}". Now trying combinations... """)
                 
                     trimmed_name = [word for word in entity.text_name.split() if word.lower() not in stop_words]
 
@@ -208,6 +213,7 @@ def query_knowledge_base(entity_list, graph: Graph, language):
 
                 # try to find entity in database through combinations of its full text name
                 if len(query_results) == 0:
+                    print(f"""\nNo results found for full text "{entity.text_name}". Now trying combinations... """)
                 
                     trimmed_name = [word for word in entity.text_name.split() if word.lower() not in stop_words]
 
@@ -234,7 +240,9 @@ def query_knowledge_base(entity_list, graph: Graph, language):
         _, readable_type = split_uri(data_dict['type'])
         data_dict['type'] = readable_type
         
-        entity_data[key_to_add] = data_dict
+        print(f"""\n Found a match for {entity.text_name}!""")
+        
+        entity_data[key_to_add] = data_dict, entity
         
 
     return entity_data
