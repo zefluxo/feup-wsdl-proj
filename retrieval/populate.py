@@ -32,3 +32,15 @@ def get_database():
         g.parse('db.ttl')
     
     return g
+
+def run_sparql_query(query, graph: Graph):
+    
+    results = graph.query(query)
+    results_dict = {
+        
+        str(row['entity']): {str(var): str(row[var]) for var in row.labels if var != 'entity'}
+        for row in results
+        
+    }
+
+    return results_dict

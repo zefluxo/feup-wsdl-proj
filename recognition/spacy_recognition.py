@@ -187,18 +187,10 @@ def query_knowledge_base(entity_list, graph: Graph, language):
         query_results = []
         
         # query based on label
-
-        print(entity.text_name)
-        print(entity.label)
-
         match entity.label:
 
             case "PERSON" | "PER"  :
 
-                print("HI")
-                
-
-                
                 query_results = query_for_person(entity.text_name, graph, language)
 
                 # try to find entity in database through combinations of its full text name
@@ -242,7 +234,7 @@ def query_knowledge_base(entity_list, graph: Graph, language):
         
         # parse the retrieved results   
         if len(query_results) == 0:
-            print(f"""\n No results found for {entity.text_name} tagged as "{entity.label}". Skipping...""")
+            print(f"""\nNo results found for {entity.text_name} tagged as "{entity.label}". Skipping...""")
             continue
         
         key_to_add = list(query_results.keys())[0]
@@ -252,7 +244,7 @@ def query_knowledge_base(entity_list, graph: Graph, language):
         _, readable_type = split_uri(data_dict['type'])
         data_dict['type'] = readable_type
         
-        print(f"""\n Found a match for {entity.text_name}!""")
+        print(f"""\nFound a match for {entity.text_name}!""")
         
         entity_data[key_to_add] = data_dict, entity
         
