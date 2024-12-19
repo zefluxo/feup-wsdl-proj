@@ -3,38 +3,97 @@ from pprint import pprint
 from spacy.training.example import Example
 
 from rdflib import Graph
-import rdflib.term
 from rdflib.plugins.sparql import prepareQuery
 
 from itertools import permutations
 
-# Entity_keywords: ["napoleon", "bonaparte" , "napoleon bonaparte"], Label: Person
-# na search
-# -> search(napoleon), search(bonaparte), search(napoleon bonaparte)
-# nos resultados de cada, soma o número de vezes que apanhas o mesmo URI
+class RDFResource:
+    def __init__(self, entity, entity_type, name, predicates_objects):
+        self.entity = entity
+        self.entity_type = entity_type
+        self.name = name
+        self.predicates_objects = predicates_objects
 
-# dict: 
-
-## Input Entity -> "Text_Name", "Text_Location (initial_char_number, final_char_number)" "Keywords", "URI"
-
+    def __repr__(self):
+        return (
+            f"RDFResource(entity={self.entity}, type={self.entity_type}, "
+            f"name={self.name}, predicates_objects={self.predicates_objects})"
+        )
+    
 class Entity:
     def __init__(self, text_name, text_location, label):
         self.text_name = text_name 
         self.text_location = text_location # saves the start char number
         self.label = label # Person, Event
 
-        self.uri = None
+        self.resource = None
+    
+    def __repr__(self):
+        return (f"Entity(text_name='{self.text_name}', "
+                f"text_location={self.text_location}, "
+                f"label='{self.label}', "
+                f"resource={self.resource})")
 
-# Load the multilingual model
+class Person:
+    def __init__(self, type, name, birth_date, death_date, description, award, member_of, term_period, military_service, activeYearsStartYear, activeYearsEndYear):
+        self.name = name
+        self.type = type
+        self.birth_date = birth_date
+        self.death_date = death_date
+        self.description = description
+        self.award = award
+        self.member_of = member_of
+        self.term_period = term_period
+        self.military_service = military_service
+        self.activeYearsStartYear = activeYearsStartYear
+        self.activeYearsEndYear = activeYearsEndYear
+
+    def __repr__(self):
+        info = [f"Name: {self.name}"
+                f"Date of Birth (DOB): {self.birth_date}"
+                f"Date of Death (DOD): {self.death_date}"
+                f"Description: {self.description if self.description else 'Unspecified'}"]
+        if self.type == 'Politician':
+                info.append(f"Term Periods: {self.term_period}",
+                            f"Member of: {self.member_of}")
+        if self.type == 'Militarian':
+                info.append(f"Awards: {self.award}",
+                            f"Military Service: {self.military_service}")
+        if self.type == 'Royalty':
+                info.append(f"Starting year of their reign: {self.activeYearsStartYear}",
+                            f"Last year of their reign: {self.activeYearsEndYear if self.activeYearsEndYear else 'Still in power.'}")
+        return tuple(info)
+    
+class Event:
+    def __init__(self, type, name, description, date, place, superEvent):
+        self.type = type
+        self.name = name
+        self.description = description
+        self.date = date
+        self.place = place
+        self.superEvent = superEvent
+    
+    def __repr__(self):
+        info = [f"Name: {self.name}"
+                f"Date of Birth (DOB): {self.birth_date}"
+                f"Date of Death (DOD): {self.death_date}"
+                f"Description: {self.description if self.description else 'Unspecified'}"]
+
+
+# load multilingual spacy model
 
 def run_spacy(text_input, language):
 
+    lang = ''
     match language:
-        case "english":
+        case "English":
+            lang = 'en'
             nlp = spacy.load("en_core_web_trf")
-        case "spanish":
+        case "Español":
+            lang = 'es'
             nlp = spacy.load("es_core_web_trf")
-        case "portuguese":
+        case "Português":
+            lang = 'pt'
             nlp = spacy.load("pt_core_web_trf")
 
     input_entities = nlp(text_input)
@@ -69,103 +128,144 @@ def run_spacy(text_input, language):
         new_entity = Entity(text_name=" ".join(current_entity_text), text_location=current_start, label=current_label)
         entity_list.append(new_entity)
 
-    print(vars(entity_list[0]))
-
     filtered_list = list(filter(lambda entity: entity.label in ["PERSON", "EVENT", "WORK_OF_ART"], entity_list))
-    return filtered_list
+    return filtered_list, lang
  
+def sparql_to_resource(sparql_object):
+    entity = str(sparql_object[0])  # ?entity
+    entity_type = str(sparql_object[1])  # ?type
+    name = str(sparql_object[2])  # ?name
+    predicate = str(sparql_object[3])  # ?predicate
+    obj = str(sparql_object[4])  # ?object
+
+    newResource = RDFResource(entity, entity_type, name, [])
+    newResource.predicates_objects.append((predicate, obj))
+    return newResource
+    
+
+def query_for_person(keyword, graph: Graph, language): 
+    print(f"Querying for {keyword}")
+    query = f"""
+            SELECT ?entity ?type ?name ?birthDate ?deathDate ?description ?award ?memberOf ?termPeriod ?militaryService ?activeYearsStartYear ?activeYearsEndYear
+            WHERE {{
+                ?entity a ?type .
+                        ?entity hist:alias ?name .
+                        ?entity hist:birthDate ?birthDate .
+                        OPTIONAL {{ ?entity hist:deathDate ?deathDate }}
+                        OPTIONAL {{ ?entity hist:description ?description }}
+                        OPTIONAL {{ ?entity hist:award ?award }}
+                        OPTIONAL {{ ?entity hist:memberOf ?memberOf }}
+                        OPTIONAL {{ ?entity hist:termPeriod ?termPeriod }}
+                        OPTIONAL {{ ?entity hist:militaryService ?militaryService }}
+                        OPTIONAL {{ ?entity hist:activeYearsStartYear ?activeYearsStartYear }}
+                        OPTIONAL {{ ?entity hist:activeYearsEndYear ?activeYearsEndYear }}
+                ?type rdfs:subClassOf* hist:Person .
+                FILTER (REGEX(LCASE(?name), "{keyword}", "i"))
+                FILTER(LANG(?name) IN ('{language}'))
+                
+                }}
+            """
+
+    results = list(graph.query(query))
+    
+
+    return results
+
+def query_for_event(keyword, graph: Graph, language): 
+    
+    query = f"""
+            SELECT ?entity ?type ?name ?predicate ?object
+            WHERE {{
+                ?entity a ?type ;
+                        hist:alias ?name ;
+
+                        ?predicate ?object .
+
+                ?type rdfs:subClassOf* hist:Event .
+                FILTER (REGEX(LCASE(?name), "{keyword}", "i"))
+                FILTER(LANG(?abstract) IN ('{language}'))
+                }}
+            """
+
+    results = list(graph.query(query))
+
+    return results
+
 
 
 # entity list consists of ["Entity_name", "Entity_label"] entries
-def query_knowledge_base(entity_list, graph: Graph):
-    
-    stop_words = {"of", "the"} 
-    
-    entities_found = []
+def query_knowledge_base(entity_list, graph: Graph, language):
 
-    query = ""
+
+    match language:
+        case 'en':
+            stop_words = ["the", "is", "in", "and", "of", "to", "a", "with"]
+        case 'es':
+            stop_words = ["el", "es", "en", "y", "de", "la", "que", "con"]
+        case 'pt':
+            stop_words = ["o", "é", "em", "e", "de", "a", "que", "com"]
+
     for entity in entity_list:
-        
-        # try to find entity in database through combinations of its full text name
-        trimmed_name = [word for word in entity.text_name.split() if word.lower() not in stop_words]
 
-        combinations = []
-        for word in range(1, len(trimmed_name) + 1): 
-            combinations.extend([" ".join(p) for p in permutations(trimmed_name, word)])
+        query_results = []
         
         # query based on label
         match entity.label:
 
             case "PERSON":
-                query = f"""
-                        SELECT ?entity ?type ?name ?predicate ?object
-                        WHERE {{
-                            ?entity a ?type ;
-                                    hist:alias ?name ;
-                                    ?predicate ?object .
+                query_results = query_for_person(entity.text_name, graph, language)
 
-                            ?type rdfs:subClassOf* hist:Person .
-                            FILTER (
-                                REGEX(LCASE(?name), "{entity.text_name}", "i") ||
-                        """
+                # try to find entity in database through combinations of its full text name
+                if len(query_results) == 0:
+                    print("\nNo results found for full text.")
+                
+                    trimmed_name = [word for word in entity.text_name.split() if word.lower() not in stop_words]
 
-                # Add OR conditions for combinations
-                if combinations:
-                            query += " || ".join([f'REGEX(LCASE(?name), "{combination}", "i")' for combination in combinations])
+                    combinations = []
+                    for word in range(1, len(trimmed_name) + 1): 
+                        combinations.extend([" ".join(p) for p in permutations(trimmed_name, word)])
+                    combinations = sorted(combinations, key=len, reverse=True)
 
-                # Close the FILTER clause and WHERE block
-                query += """
-                    )
-                }
-                """
+                    i = 0
+                    while len(query_results) == 0 and i != len(combinations): 
+                        query_results = query_for_person(combinations[i], graph, language)
+                        print(f"\nTrying to find {entity.text_name} through {combinations[i]}...")
+                        i += 1
 
 
             case "EVENT":
-                query = f"""
-                        SELECT ?entity ?type ?name ?predicate ?object
-                        WHERE {{
-                            ?entity a ?type ;
-                                    hist:alias ?name ;
-                                    ?predicate ?object .
+                query_results = query_for_event(entity.text_name, graph, language)
 
-                            ?type rdfs:subClassOf* hist:Event .
-                            FILTER (
-                                REGEX(LCASE(?name), "{entity.text_name}", "i") ||
-                        """
+                # try to find entity in database through combinations of its full text name
+                if len(query_results) == 0:
+                
+                    trimmed_name = [word for word in entity.text_name.split() if word.lower() not in stop_words]
 
-                # Add OR conditions for combinations
-                if combinations:
-                            query += " || ".join([f'REGEX(LCASE(?name), "{combination}", "i")' for combination in combinations])
+                    combinations = []
+                    for word in range(1, len(trimmed_name) + 1): 
+                        combinations.extend([" ".join(p) for p in permutations(trimmed_name, word)])
+                    combinations = sorted(combinations, key=len, reverse=True)
 
-                # Close the FILTER clause and WHERE block
-                query += """
-                    )
-                }
-                """
-
+                    i = 0
+                    while len(query_results) == 0 and i != len(combinations): 
+                        query_results = query_for_event(combinations[i], graph, language)
+                        print(f"\nTrying to find {entity.text_name} through {combinations[i]}...")
+                        i += 1
         
-        current_result = graph.query(query)
-
-        current_result_python = []
-        for row in current_result:
-            print("here")
-            result_row = []
-            for value in row:
-                if isinstance(value, rdflib.term.Literal):
-                    result_row.append(value.toPython())  # convert to a Python native type
-                else:
-                    result_row.append(str(value))  # URIRef or other terms to string
-
-            current_result_python.append(result_row)
-            pprint(result_row)
+        # parse the retrieved results   
+        if len(query_results) == 0:
+            print(f"""\n No results found for {entity.text_name} tagged as "{entity.label}". Skipping...""")
+            continue
         
-        entities_found.append(current_result_python)
-        
+        # query_results = query_results[0] # no disambiguation done here - we get the first matching entity 
+        print(f"Query results: {query_results}")
+
+        resource = sparql_to_resource(query_results)
+        entity.resource = resource
+        # pprint(f"object: {entity.resource}")
+
+    return entity_list
+
     
-#text_input = """Napoleon Bonaparte rose to prominence during the French Revolution.
-#    He became a key figure in shaping European politics. The Battle of Waterloo marked his ultimate defeat.
-#    Despite this, his legacy remains influential to this day.""" 
-
-#input= run_spacy(text_input, language="english")
  
 
